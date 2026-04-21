@@ -69,6 +69,13 @@ public:
 protected:
   //TODO - header fields, e.g.:
   uint8_t  m_SB;
+  uint8_t m_TEI;
+  uint8_t m_PUSI;
+  uint8_t m_TP;
+  uint16_t m_PID;
+  uint8_t m_TCC;
+  uint8_t m_AFC;
+  uint8_t m_CC;
 
 public:
   void     Reset();
@@ -78,11 +85,18 @@ public:
 public:
   //TODO - direct acces to header field value, e.g.:
   uint8_t  getSyncByte() const { return m_SB; }  
+  uint8_t  getTEI() const { return m_TEI; }  
+  uint8_t  getPUSI() const { return m_PUSI; }  
+  uint8_t  getTP() const { return m_TP; }  
+  uint16_t  getPID() const { return m_PID; }  
+  uint8_t  getTCC() const { return m_TCC; }  
+  uint8_t  getAFC() const { return m_AFC; }  
+  uint8_t  getCC() const { return m_CC; }  
 
 public:
   //TODO - derrived informations
   //bool     hasAdaptationField() const { /*TODO*/ }
-  //bool     hasPayload        () const { /*TODO*/ }
+ // bool     hasPayload        () const { /*TODO*/ }
 };
 
 //=============================================================================================================================================================================
