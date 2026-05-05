@@ -105,6 +105,7 @@ int32_t xTS_AdaptationField::Parse(const uint8_t* PacketBuffer, uint8_t Adaptati
 void xTS_AdaptationField::Print() const
 {
    printf("AF: ");
+   printf("L:%d ",m_AFL);
   printf("DC=%d",m_DC);
   printf(" RA=%d",m_RA);
   printf(" SP=%d",m_SP);

@@ -28,7 +28,7 @@ FILE* file = std::fopen("example_new.ts", "rb"); //read in binary mode -rb
     printf("%010d ", TS_PacketId);
     TS_PacketHeader.Print();
     printf(" ");
-    if(TS_AdaptationField.Parse(TS_PacketBuffer, TS_PacketHeader.getAFC() > 0)){
+    if(TS_AdaptationField.Parse(TS_PacketBuffer, TS_PacketHeader.getAFC()) > 0){
     TS_AdaptationField.Print();
     }
     printf("\n");
