@@ -1,6 +1,7 @@
 #pragma once
 #include "tsCommon.h"
 #include <string>
+#include <cstring>
 
 /*
 MPEG-TS packet:
@@ -95,8 +96,8 @@ public:
 
 public:
   //TODO - derrived informations
-  //bool     hasAdaptationField() const { /*TODO*/ }
- // bool     hasPayload        () const { /*TODO*/ }
+  bool     hasAdaptationField() const { return (m_AFC==2 || m_AFC == 3); }
+  bool     hasPayload        () const { return (m_AFC==1 || m_AFC ==3); }
 };
 
 //=============================================================================================================================================================================
@@ -126,8 +127,9 @@ class xTS_AdaptationField
   public:
     //mandatory fields
     uint8_t getAdaptationFieldLength () const { return m_AFL ; }
+    uint32_t getNumBytes () const { return 1 + m_AFL; }
+    
     //derived values
-    //uint32_t getNumBytes () const { }
 };
 
 class xPES_PacketHeader
@@ -175,12 +177,13 @@ class xPES_Assembler
       AssemblingFinished,
     };
   protected:
-    //setup
+    //setup - for which PID we assemble data (Video 0x120)
     int32_t m_PID;
-    //buffer
+    //buffer - for the stream
     uint8_t* m_Buffer;
     uint32_t m_BufferSize;
     uint32_t m_DataOffset;
+    uint32_t m_HeaderLength;
     //operation
     int8_t m_LastContinuityCounter;
     bool m_Started;
@@ -194,6 +197,8 @@ class xPES_Assembler
     void PrintPESH () const { m_PESH.Print(); }
     uint8_t* getPacket () { return m_Buffer; }
     int32_t getNumPacketBytes() const { return m_DataOffset; }
+    uint32_t getHeaderLength () const { return m_HeaderLength; }
+
   protected:
     void xBufferReset ();
     void xBufferAppend(const uint8_t* Data, int32_t Size);

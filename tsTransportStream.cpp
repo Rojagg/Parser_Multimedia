@@ -122,7 +122,7 @@ void xPES_PacketHeader::Reset(){
 }
 
 int32_t xPES_PacketHeader::Parse(const uint8_t* Input){
-  m_PacketStartCodePrefix = ((Input[0] << 16) || (Input[1] << 8) || Input[2]);
+  m_PacketStartCodePrefix = ((Input[0] << 16) | (Input[1] << 8) | Input[2]);
   m_StreamId = Input[3];
   m_PacketLength = ((Input[4] << 8) | Input[5]);
   m_HeaderLength =  Input[8] + 9; // BEcause the header length at least has 9 bytes
@@ -136,4 +136,84 @@ void xPES_PacketHeader::Print() const{
 }
 
 
-void xPES_Assembler::
+void xPES_Assembler::Init(int32_t PID) //choose the stream
+{
+  m_PID = PID;
+  m_LastContinuityCounter = -1;
+  m_Started = false;
+  xBufferReset();
+}
+
+xPES_Assembler::xPES_Assembler()
+{
+ m_Buffer = nullptr;
+ m_BufferSize = 0;
+ Init(-1);
+}
+
+xPES_Assembler::~xPES_Assembler()
+{
+  delete[] m_Buffer;
+}
+
+void xPES_Assembler::xBufferReset ()
+{
+  m_DataOffset = 0;
+}
+
+void xPES_Assembler::xBufferAppend(const uint8_t* Data, int32_t Size)
+{
+  if(Size <= 0) return;
+  if(m_DataOffset + Size > m_BufferSize){
+    m_BufferSize = m_DataOffset + Size + 256;
+    uint8_t* NewBuffer = new uint8_t[m_BufferSize];
+    if(m_Buffer) //copy old buffer into new one
+    {
+        memcpy(NewBuffer, m_Buffer, m_DataOffset); //copy the memory blokcs
+        delete[] m_Buffer;
+        
+    }
+    m_Buffer = NewBuffer;
+
+  }
+  memcpy(m_Buffer + m_DataOffset, Data, Size);
+    m_DataOffset += Size;
+}
+
+xPES_Assembler::eResult xPES_Assembler::AbsorbPacket(const uint8_t* TransportStreamPacket, const xTS_PacketHeader* PacketHeader, const xTS_AdaptationField* AdaptationField)
+{
+  if(PacketHeader -> getPID() != m_PID) return eResult::UnexpectedPID;
+  if(!PacketHeader -> hasPayload()) return eResult::AssemblingContinue;
+  int32_t off = xTS::TS_HeaderLength + (PacketHeader->hasAdaptationField() ? AdaptationField->getNumBytes() : 0); //where payload starts
+  int32_t size = xTS::TS_PacketLength - off;
+
+  //Start new PES
+  if(PacketHeader->getPUSI()) //start new Paylod Unit Start Indicator
+  {
+    xBufferReset();
+    xBufferAppend(TransportStreamPacket + off, size); //Add payload of packet
+    m_PESH.Reset(); //read PES from buffer
+    m_PESH.Parse(m_Buffer);
+    m_HeaderLength = m_PESH.getHeaderLength(); 
+    m_LastContinuityCounter = PacketHeader->getCC();
+    m_Started = true;
+    return eResult::AssemblingStarted;
+  }
+
+  //Packet loss detection
+  if(!m_Started || ((m_LastContinuityCounter + 1) & 15) != PacketHeader->getCC()) 
+  { 
+    m_Started = false; 
+    return eResult::StreamPackedLost; //if the lost is detected - discard the PES
+  }                                   //start when getPUSI is true again
+
+  xBufferAppend(TransportStreamPacket + off, size); 
+  m_LastContinuityCounter = PacketHeader->getCC();
+
+  if(m_PESH.getPacketLength() && m_DataOffset >= uint32_t(m_PESH.getPacketLength() + 6)) 
+  { 
+    m_Started = false; 
+    return eResult::AssemblingFinished; 
+  }
+  return eResult::AssemblingContinue;
+}
