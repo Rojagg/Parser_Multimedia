@@ -115,3 +115,25 @@ void xTS_AdaptationField::Print() const
   printf(" TP=%d",m_TP);
   printf(" EX=%d",m_EX);
 }
+
+
+void xPES_PacketHeader::Reset(){
+  m_PacketStartCodePrefix = m_StreamId = m_PacketLength = m_HeaderLength = 0;
+}
+
+int32_t xPES_PacketHeader::Parse(const uint8_t* Input){
+  m_PacketStartCodePrefix = ((Input[0] << 16) || (Input[1] << 8) || Input[2]);
+  m_StreamId = Input[3];
+  m_PacketLength = ((Input[4] << 8) | Input[5]);
+  m_HeaderLength =  Input[8] + 9; // BEcause the header length at least has 9 bytes
+  return m_HeaderLength;
+
+
+}
+
+void xPES_PacketHeader::Print() const{
+  printf("PES: PSCP=%d SID=%d L=%d", m_PacketStartCodePrefix, m_StreamId, m_PacketLength);
+}
+
+
+void xPES_Assembler::
